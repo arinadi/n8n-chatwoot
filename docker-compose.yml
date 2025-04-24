@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${N8N_DB_HOST}
+      - DB_POSTGRESDB_PORT=${N8N_DB_PORT}
+      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME}
+      - DB_POSTGRESDB_USER=${N8N_DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
+    volumes:
+      - ./n8n/data:/home/node/.n8n
+    depends_on:
+      - postgres
+    networks:
+      - n8nnet
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=${N8N_DB_USER}
+      - POSTGRES_PASSWORD=${N8N_DB_PASSWORD}
+      - POSTGRES_DB=${N8N_DB_NAME}
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+    networks:
+      - n8nnet
+
+  chatwoot:
+    image: chatwoot/chatwoot:latest
+    depends_on:
+      - chatwoot-postgres
+      - chatwoot-redis
+    ports:
+      - "3000:3000"
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${CW_SECRET_KEY_BASE}
+      - FRONTEND_URL=${CW_FRONTEND_URL}
+      - REDIS_URL=${CW_REDIS_URL}
+      - POSTGRES_HOST=${CW_PG_HOST}
+      - POSTGRES_USERNAME=${CW_PG_USER}
+      - POSTGRES_PASSWORD=${CW_PG_PASSWORD}
+      - POSTGRES_DATABASE=${CW_PG_DB}
+    volumes:
+      - ./chatwoot/storage:/app/storage
+    networks:
+      - n8nnet
+
+  chatwoot-postgres:
+    image: postgres:14
+    environment:
+      - POSTGRES_DB=${CW_PG_DB}
+      - POSTGRES_USER=${CW_PG_USER}
+      - POSTGRES_PASSWORD=${CW_PG_PASSWORD}
+    volumes:
+      - ./chatwoot/postgres:/var/lib/postgresql/data
+    networks:
+      - n8nnet
+
+  chatwoot-redis:
+    image: redis:7
+    volumes:
+      - ./redis/data:/data
+    networks:
+      - n8nnet
+
+  ngrok-n8n:
+    image: ngrok/ngrok:latest
+    command: http n8n:5678
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    networks:
+      - n8nnet
+    restart: unless-stopped
+
+  ngrok-chatwoot:
+    image: ngrok/ngrok:latest
+    command: http chatwoot:3000
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    networks:
+      - n8nnet
+    restart: unless-stopped
+
+networks:
+  n8nnet:
