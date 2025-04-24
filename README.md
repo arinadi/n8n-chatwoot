@@ -1,8 +1,9 @@
-# 🚀 n8n + Chatwoot + Ngrok (Dockerized Stack)
+# 🚀 n8n + Chatwoot + Nginx + Ngrok (Dockerized Stack)
 
 A lightweight, production-ready Docker stack featuring:
 - [n8n](https://n8n.io): Open-source workflow automation
 - [Chatwoot](https://www.chatwoot.com): Customer messaging platform
+- [Nginx](https://nginx.org): Reverse proxy to unify endpoints
 - [ngrok](https://ngrok.com): Public tunneling for easy access
 
 ---
@@ -13,6 +14,8 @@ A lightweight, production-ready Docker stack featuring:
 project-root/
 ├── docker-compose.yml
 ├── .env
+├── nginx/
+│   └── nginx.conf
 ├── n8n/
 │   └── data/
 ├── postgres/
@@ -44,7 +47,7 @@ N8N_DB_PASSWORD=n8npass
 
 # === Chatwoot ===
 CW_SECRET_KEY_BASE=superlongrandomkey123456
-CW_FRONTEND_URL=http://localhost:3000
+CW_FRONTEND_URL=http://localhost/chatwoot
 CW_REDIS_URL=redis://chatwoot-redis:6379
 CW_PG_HOST=chatwoot-postgres
 CW_PG_USER=postgres
@@ -71,17 +74,12 @@ docker-compose --env-file .env up -d
 
 ## 🌍 Access URLs
 
-| Service   | Local URL              | Public (Ngrok) |
-|-----------|------------------------|----------------|
-| n8n       | http://localhost:5678  | check `docker logs ngrok-n8n` |
-| Chatwoot  | http://localhost:3000  | check `docker logs ngrok-chatwoot` |
+| Service   | Local URL (via Nginx)     | Public (Ngrok) |
+|-----------|---------------------------|----------------|
+| n8n       | http://localhost:8080/n8n/   | check `docker logs ngrok` |
+| Chatwoot  | http://localhost:8080/chatwoot/ | check `docker logs ngrok` |
 
-To view public URLs from ngrok:
-
-```bash
-docker logs ngrok-n8n
-docker logs ngrok-chatwoot
-```
+> Public URLs are served under one domain using subpaths: `/n8n/` and `/chatwoot/`
 
 ---
 
@@ -90,6 +88,7 @@ docker logs ngrok-chatwoot
 - n8n uses basic auth (`admin / securepassword` by default)
 - Avoid using weak passwords if exposed to the internet
 - Optionally, add OAuth or Authelia in front for SSO
+- You can secure Nginx with HTTPS using a reverse proxy service or Let's Encrypt
 
 ---
 
@@ -98,6 +97,8 @@ docker logs ngrok-chatwoot
 - [ ] Google Login for n8n
 - [ ] Webhook integration: Chatwoot → n8n → LLM auto-reply
 - [ ] WhatsApp or Email alerts via n8n flows
+- [ ] Add HTTPS support via Let's Encrypt
+- [ ] Optional Auth middleware for Chatwoot
 
 ---
 

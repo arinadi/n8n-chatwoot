@@ -3,8 +3,6 @@ version: '3.8'
 services:
   n8n:
     image: n8nio/n8n:latest
-    ports:
-      - "5678:5678"
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_USER}
@@ -39,8 +37,6 @@ services:
     depends_on:
       - chatwoot-postgres
       - chatwoot-redis
-    ports:
-      - "3000:3000"
     environment:
       - RAILS_ENV=production
       - SECRET_KEY_BASE=${CW_SECRET_KEY_BASE}
@@ -73,29 +69,26 @@ services:
     networks:
       - n8nnet
 
-  ngrok-n8n:
-    image: ngrok/ngrok:latest
-    command: http n8n:5678
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - n8n
+      - chatwoot
     networks:
       - n8nnet
-    restart: unless-stopped
-    labels:
-      - "ngrok.service=n8n"
-      - "ngrok.tunnel=n8n-tunnel"
+    expose:
+      - "8080"  # expose only internally (no host binding)
 
-  ngrok-chatwoot:
+  ngrok:
     image: ngrok/ngrok:latest
-    command: http chatwoot:3000
+    command: http nginx:8080
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     networks:
       - n8nnet
     restart: unless-stopped
-    labels:
-      - "ngrok.service=chatwoot"
-      - "ngrok.tunnel=chatwoot-tunnel"
 
 networks:
   n8nnet:
