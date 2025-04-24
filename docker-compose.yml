@@ -81,6 +81,9 @@ services:
     networks:
       - n8nnet
     restart: unless-stopped
+    labels:
+      - "ngrok.service=n8n"
+      - "ngrok.tunnel=n8n-tunnel"
 
   ngrok-chatwoot:
     image: ngrok/ngrok:latest
@@ -90,6 +93,9 @@ services:
     networks:
       - n8nnet
     restart: unless-stopped
+    labels:
+      - "ngrok.service=chatwoot"
+      - "ngrok.tunnel=chatwoot-tunnel"
 
 networks:
   n8nnet:
